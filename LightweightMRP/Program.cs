@@ -48,8 +48,8 @@ class Program
     static void Main()
     {
         #region create items
+        var itemsCount = 0;
         var itemList = new List<Item>();
-
         var itemPlug = new Item("A", "Plug", 100);
         var itemExtensionCable = new Item("B", "Extension Cable", 200);
         var itemSocket = new Item("C", "Socket", 50);
@@ -95,17 +95,18 @@ class Program
         itemList.Add(itemPin);
         itemList.Add(itemScrew);
         itemList.Add(itemClamp);
+        itemsCount = itemList.Count;
         #endregion
 
-        #region build gozintograph
-        var demandMatrix = new double[itemList.Count, itemList.Count];
-        var unitMatrix = new double[itemList.Count, itemList.Count];
-        var inversedlDemandMatrix = new double[itemList.Count, itemList.Count];
-        var totalDemandMatrix = new double[itemList.Count, itemList.Count];
+        #region build the demand matrix
+        var demandMatrix = new double[itemsCount, itemsCount];
+        var unitMatrix = new double[itemsCount, itemsCount];
+        var invertedlDemandMatrix = new double[itemsCount, itemsCount];
+        var totalDemandMatrix = new double[itemsCount, itemsCount];
 
-        for (int i = 0; i < itemList.Count; i++)
+        for (int i = 0; i < itemsCount; i++)
         {
-            for (int j = 0; j < itemList.Count; j++)
+            for (int j = 0; j < itemsCount; j++)
             {
                 if (i == j)
                 {
@@ -124,10 +125,16 @@ class Program
                 }
             }
         }
-        
-        for (int i = 0; i < itemList.Count; i++)
+
+        Console.WriteLine("demand matrix");
+        Console.WriteLine(OutputMatrix(demandMatrix));
+        Console.WriteLine("");
+        #endregion
+
+        #region build the unit matrix
+        for (int i = 0; i < itemsCount; i++)
         {
-            for (int j = 0; j < itemList.Count; j++)
+            for (int j = 0; j < itemsCount; j++)
             {
                 if (i == j)
                 {
@@ -139,25 +146,22 @@ class Program
                 }
             }
         }
+        #endregion
 
-        inversedlDemandMatrix = NormalizeMatrix(InvertMatrix(demandMatrix));
+        #region build the inverted demand matrix
+        invertedlDemandMatrix = NormalizeMatrix(InvertMatrix(demandMatrix));
+        Console.WriteLine("inverted demand matrix");
+        Console.WriteLine(OutputMatrix(invertedlDemandMatrix));
+        #endregion
 
-        Console.WriteLine("demand matrix");
-        Console.WriteLine(OutputMatrix(demandMatrix));
-        Console.WriteLine("");
-        Console.WriteLine("unit matrix");
-        Console.WriteLine(OutputMatrix(unitMatrix));
-        Console.WriteLine("");
-        Console.WriteLine("inversed demand matrix");
-        Console.WriteLine(OutputMatrix(inversedlDemandMatrix));
-
+        #region caculate the total demand
         var totalAmount = 0.00;
 
-        for (int i = 0; i < itemList.Count; i++)
+        for (int i = 0; i < itemsCount; i++)
         {
-            for (int j = 0; j < itemList.Count; j++)
+            for (int j = 0; j < itemsCount; j++)
             {
-                totalAmount += inversedlDemandMatrix[i, j] * itemList[j].Demand;
+                totalAmount += invertedlDemandMatrix[i, j] * itemList[j].Demand;
             }
 
             Console.WriteLine("Product " + itemList[i].ItemNo + ": " + totalAmount);
@@ -201,21 +205,21 @@ class Program
         return result;
     }
 
-    public static double[,] InvertMatrix(double[,] matrix)
+    public static double[,] InvertMatrix(double[,] demandMatrix)
     {
-        int n = matrix.GetLength(0);
+        int n = demandMatrix.GetLength(0);
         double[,] augmented = new double[n, n * 2];
 
         for (int i = 0; i < n; i++)
         {
             for (int j = 0; j < n; j++)
             {
-                augmented[i, j] = matrix[i, j];
+                augmented[i, j] = demandMatrix[i, j];
                 augmented[i, j + n] = (i == j) ? 1 : 0;
             }
         }
 
-        // Apply Gaussian elimination
+        // apply Gaussian elimination
         for (int i = 0; i < n; i++)
         {
             int pivotRow = i;
@@ -242,14 +246,14 @@ class Program
                 return null;
             }
 
-            // Row Normalization
+            // row normalization
             double pivot = augmented[i, i];
             for (int j = 0; j < 2 * n; j++)
             {
                 augmented[i, j] /= pivot;
             }
 
-            // Column Elimination
+            // column elimination
             for (int j = 0; j < n; j++)
             {
                 if (j != i)
@@ -263,7 +267,7 @@ class Program
             }
         }
 
-        // Extracting and Returning the Inverse
+        // extracting and returning the inverse
         double[,] result = new double[n, n];
         for (int i = 0; i < n; i++)
         {
